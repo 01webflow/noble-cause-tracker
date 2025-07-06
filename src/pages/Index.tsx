@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
@@ -19,6 +20,30 @@ const Index = () => {
   const { user, login, logout } = useAuth();
   const [activeSection, setActiveSection] = useState<ActiveSection>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close sidebar when clicking outside on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close sidebar on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
 
   if (!user) {
     return <EnhancedAuth onLogin={login} />;
@@ -43,6 +68,14 @@ const Index = () => {
     }
   };
 
+  const handleMenuClick = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleSidebarClose = () => {
+    setSidebarOpen(false);
+  };
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       <ParticleBackground />
@@ -51,34 +84,40 @@ const Index = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
+        className="flex flex-col lg:flex-row min-h-screen"
       >
         <Header 
           user={user} 
           onLogout={logout} 
-          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+          onMenuClick={handleMenuClick}
         />
         
-        <div className="flex relative">
+        <div className="flex flex-1 relative">
           <Sidebar 
             activeSection={activeSection}
             onSectionChange={setActiveSection}
             userRole={user.role}
             isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
+            onClose={handleSidebarClose}
           />
           
-          <main className="flex-1 p-6 lg:ml-64 relative z-10">
+          <main className={cn(
+            "flex-1 p-4 lg:p-6 relative z-10 transition-all duration-300",
+            "lg:ml-64", // Default margin for desktop
+            sidebarOpen ? "lg:ml-64" : "lg:ml-16" // Adjust based on sidebar state
+          )}>
             <div className="max-w-7xl mx-auto">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeSection}
-                  initial={{ opacity: 0, x: 50, rotateY: -10 }}
-                  animate={{ opacity: 1, x: 0, rotateY: 0 }}
-                  exit={{ opacity: 0, x: -50, rotateY: 10 }}
+                  initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -20, scale: 0.95 }}
                   transition={{ 
-                    duration: 0.5,
+                    duration: 0.4,
                     type: "spring",
-                    stiffness: 100
+                    stiffness: 100,
+                    damping: 15
                   }}
                 >
                   {renderActiveSection()}
