@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noble Cause Tracker - Donation Management System</title>
+    <link rel="stylesheet" href="donation-tracker.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Particle Background -->
+    <div class="particles-container">
+        <div class="particles"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Authentication Section -->
+        <div class="auth-section" id="authSection">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="logo-container">
+                        <i class="fas fa-heart logo-icon"></i>
+                    </div>
+                    <h1 class="auth-title">Noble Cause Tracker</h1>
+                    <p class="auth-subtitle">Transform generosity into impact</p>
+                </div>
+
+                <div class="auth-tabs">
+                    <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+                    <button class="auth-tab" onclick="switchTab('signup')">Sign Up</button>
+                </div>
+
+                <form class="auth-form" id="authForm">
+                    <div class="form-group" id="nameFields" style="display: none;">
+                        <div class="name-inputs">
+                            <div class="input-group">
+                                <i class="fas fa-user input-icon"></i>
+                                <input type="text" id="firstName" placeholder="First Name" class="auth-input">
+                            </div>
+                            <div class="input-group">
+                                <i class="fas fa-user input-icon"></i>
+                                <input type="text" id="lastName" placeholder="Last Name" class="auth-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" id="email" placeholder="Email Address" class="auth-input" required>
+                    </div>
+
+                    <div class="input-group">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="password" placeholder="Password" class="auth-input" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword('password')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+
+                    <div class="input-group" id="confirmPasswordField" style="display: none;">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="confirmPassword" placeholder="Confirm Password" class="auth-input">
+                        <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+
+                    <div class="input-group">
+                        <i class="fas fa-shield-alt input-icon"></i>
+                        <select id="role" class="auth-select">
+                            <option value="admin">Administrator</option>
+                            <option value="finance">Finance Manager</option>
+                            <option value="event_manager">Event Manager</option>
+                            <option value="viewer">Viewer</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="auth-button">
+                        <span class="button-text">Sign In</span>
+                        <i class="fas fa-sparkles loading-icon" style="display: none;"></i>
+                    </button>
+                </form>
+
+                <p class="demo-note">Demo: Use any email/password combination</p>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div class="dashboard-section" id="dashboardSection" style="display: none;">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div class="header-left">
+                    <button class="menu-btn" id="menuBtn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="logo-section">
+                        <div class="header-logo">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <div class="header-text">
+                            <h1>Noble Cause Tracker</h1>
+                            <p>3D Donation Management System</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="user-info">
+                        <span class="user-name" id="userName">User</span>
+                        <span class="user-role" id="userRole">Admin</span>
+                    </div>
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <button class="logout-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Sidebar -->
+            <nav class="sidebar" id="sidebar">
+                <div class="sidebar-menu">
+                    <a href="#" class="menu-item active" onclick="switchSection('dashboard')">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" class="menu-item" onclick="switchSection('donations')">
+                        <i class="fas fa-dollar-sign"></i>
+                        <span>Donations</span>
+                    </a>
+                    <a href="#" class="menu-item" onclick="switchSection('donors')">
+                        <i class="fas fa-users"></i>
+                        <span>Donors</span>
+                    </a>
+                    <a href="#" class="menu-item" onclick="switchSection('sponsors')">
+                        <i class="fas fa-award"></i>
+                        <span>Sponsors</span>
+                    </a>
+                    <a href="#" class="menu-item" onclick="switchSection('reports')">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Reports</span>
+                    </a>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <div class="content-container">
+                    <!-- Welcome Section -->
+                    <div class="welcome-section">
+                        <h2>Welcome to Noble Cause Tracker</h2>
+                        <p>Transforming generosity into impact through intelligent tracking</p>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-content">
+                                <div class="stat-info">
+                                    <p class="stat-label">Total Donations</p>
+                                    <span class="stat-value" data-target="125000">$0</span>
+                                </div>
+                                <div class="stat-icon">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-content">
+                                <div class="stat-info">
+                                    <p class="stat-label">Active Donors</p>
+                                    <span class="stat-value" data-target="1250">0</span>
+                                </div>
+                                <div class="stat-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-content">
+                                <div class="stat-info">
+                                    <p class="stat-label">Sponsors</p>
+                                    <span class="stat-value" data-target="45">0</span>
+                                </div>
+                                <div class="stat-icon">
+                                    <i class="fas fa-award"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-content">
+                                <div class="stat-info">
+                                    <p class="stat-label">Campaign Goal</p>
+                                    <span class="stat-value" data-target="85">0%</span>
+                                </div>
+                                <div class="stat-icon">
+                                    <i class="fas fa-target"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>Donation Trends</h3>
+                            <div class="chart-placeholder">
+                                <i class="fas fa-chart-line"></i>
+                                <p>Interactive chart will be displayed here</p>
+                            </div>
+                        </div>
+
+                        <div class="chart-card">
+                            <h3>Donation Sources</h3>
+                            <div class="chart-placeholder">
+                                <i class="fas fa-chart-pie"></i>
+                                <p>Pie chart will be displayed here</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activities -->
+                    <div class="activities-card">
+                        <h3>Recent Activities</h3>
+                        <div class="activities-list">
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="fas fa-heart"></i>
+                                </div>
+                                <div class="activity-info">
+                                    <p class="activity-name">John Smith</p>
+                                    <p class="activity-time">2 hours ago</p>
+                                </div>
+                                <div class="activity-amount">$500</div>
+                            </div>
+
+                            <div class="activity-item">
+                                <div class="activity-icon sponsor">
+                                    <i class="fas fa-award"></i>
+                                </div>
+                                <div class="activity-info">
+                                    <p class="activity-name">Tech Corp</p>
+                                    <p class="activity-time">4 hours ago</p>
+                                </div>
+                                <div class="activity-amount">$5,000</div>
+                            </div>
+
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="fas fa-heart"></i>
+                                </div>
+                                <div class="activity-info">
+                                    <p class="activity-name">Maria Garcia</p>
+                                    <p class="activity-time">6 hours ago</p>
+                                </div>
+                                <div class="activity-amount">$250</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="donation-tracker.js"></script>
+</body>
+</html>

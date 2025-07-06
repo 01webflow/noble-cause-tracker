@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Header } from '@/components/Header';
@@ -11,7 +10,7 @@ import { Reports } from '@/components/Reports';
 import { UserManagement } from '@/components/UserManagement';
 import { ParticleBackground } from '@/components/ParticleBackground';
 import { useAuth } from '@/hooks/useAuth';
-import { LoginForm } from '@/components/LoginForm';
+import { EnhancedAuth } from '@/components/EnhancedAuth';
 
 export type UserRole = 'admin' | 'finance' | 'event_manager' | 'viewer';
 export type ActiveSection = 'dashboard' | 'donations' | 'donors' | 'sponsors' | 'reports' | 'users';
@@ -22,12 +21,7 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!user) {
-    return (
-      <div className="min-h-screen relative overflow-hidden">
-        <ParticleBackground />
-        <LoginForm onLogin={login} />
-      </div>
-    );
+    return <EnhancedAuth onLogin={login} />;
   }
 
   const renderActiveSection = () => {
