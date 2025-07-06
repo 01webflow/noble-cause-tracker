@@ -3,16 +3,24 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Heart, Menu, User, LogOut } from 'lucide-react';
+import { Heart, Menu, User, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { User as UserType } from '@/hooks/useAuth';
 
 interface HeaderProps {
   user: UserType;
   onLogout: () => void;
   onMenuClick: () => void;
+  sidebarCollapsed?: boolean;
+  onSidebarCollapse?: () => void;
 }
 
-export const Header = ({ user, onLogout, onMenuClick }: HeaderProps) => {
+export const Header = ({ 
+  user, 
+  onLogout, 
+  onMenuClick, 
+  sidebarCollapsed = false, 
+  onSidebarCollapse 
+}: HeaderProps) => {
   return (
     <motion.header 
       className="glass-card border-0 border-b border-white/10 px-4 lg:px-6 py-4 sticky top-0 z-50"
@@ -22,19 +30,43 @@ export const Header = ({ user, onLogout, onMenuClick }: HeaderProps) => {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2 lg:space-x-4">
+          {/* Mobile menu button */}
           <motion.div
             whileTap={{ scale: 0.95 }}
             whileHover={{ scale: 1.05 }}
+            className="lg:hidden"
           >
             <Button
               variant="ghost"
               size="sm"
               onClick={onMenuClick}
-              className="lg:hidden btn-3d glass hover:glass-card text-white hover:text-white p-2"
+              className="btn-3d glass hover:glass-card text-white hover:text-white p-2"
             >
               <Menu className="h-5 w-5" />
             </Button>
           </motion.div>
+
+          {/* Desktop sidebar toggle */}
+          {onSidebarCollapse && (
+            <motion.div
+              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.05 }}
+              className="hidden lg:block"
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onSidebarCollapse}
+                className="btn-3d glass hover:glass-card text-white hover:text-white p-2"
+              >
+                {sidebarCollapsed ? (
+                  <PanelLeftOpen className="h-5 w-5" />
+                ) : (
+                  <PanelLeftClose className="h-5 w-5" />
+                )}
+              </Button>
+            </motion.div>
+          )}
           
           <motion.div 
             className="flex items-center space-x-2 lg:space-x-3"

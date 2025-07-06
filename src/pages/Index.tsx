@@ -12,6 +12,7 @@ import { UserManagement } from '@/components/UserManagement';
 import { ParticleBackground } from '@/components/ParticleBackground';
 import { useAuth } from '@/hooks/useAuth';
 import { EnhancedAuth } from '@/components/EnhancedAuth';
+import { cn } from '@/lib/utils';
 
 export type UserRole = 'admin' | 'finance' | 'event_manager' | 'viewer';
 export type ActiveSection = 'dashboard' | 'donations' | 'donors' | 'sponsors' | 'reports' | 'users';
@@ -20,15 +21,21 @@ const Index = () => {
   const { user, login, logout } = useAuth();
   const [activeSection, setActiveSection] = useState<ActiveSection>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Close sidebar when clicking outside on mobile
+  // Auto-collapse sidebar on desktop based on screen size
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
         setSidebarOpen(false);
+        // Auto-collapse on smaller desktop screens
+        setSidebarCollapsed(window.innerWidth < 1280);
+      } else {
+        setSidebarCollapsed(false);
       }
     };
 
+    handleResize(); // Initial check
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -36,14 +43,27 @@ const Index = () => {
   // Close sidebar on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && sidebarOpen) {
         setSidebarOpen(false);
       }
     };
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, []);
+  }, [sidebarOpen]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (sidebarOpen && window.innerWidth < 1024) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [sidebarOpen]);
 
   if (!user) {
     return <EnhancedAuth onLogin={login} />;
@@ -76,6 +96,10 @@ const Index = () => {
     setSidebarOpen(false);
   };
 
+  const handleSidebarCollapse = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       <ParticleBackground />
@@ -84,12 +108,14 @@ const Index = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="flex flex-col lg:flex-row min-h-screen"
+        className="flex flex-col min-h-screen"
       >
         <Header 
           user={user} 
           onLogout={logout} 
           onMenuClick={handleMenuClick}
+          sidebarCollapsed={sidebarCollapsed}
+          onSidebarCollapse={handleSidebarCollapse}
         />
         
         <div className="flex flex-1 relative">
@@ -99,12 +125,16 @@ const Index = () => {
             userRole={user.role}
             isOpen={sidebarOpen}
             onClose={handleSidebarClose}
+            isCollapsed={sidebarCollapsed}
+            onToggleCollapse={handleSidebarCollapse}
           />
           
           <main className={cn(
-            "flex-1 p-4 lg:p-6 relative z-10 transition-all duration-300",
-            "lg:ml-64", // Default margin for desktop
-            sidebarOpen ? "lg:ml-64" : "lg:ml-16" // Adjust based on sidebar state
+            "flex-1 p-4 lg:p-6 relative z-10 transition-all duration-300 ease-in-out",
+            // Dynamic margin based on sidebar state
+            "lg:ml-0", // Default no margin
+            !sidebarCollapsed && "lg:ml-64", // Full sidebar width
+            sidebarCollapsed && "lg:ml-16" // Collapsed sidebar width
           )}>
             <div className="max-w-7xl mx-auto">
               <AnimatePresence mode="wait">
