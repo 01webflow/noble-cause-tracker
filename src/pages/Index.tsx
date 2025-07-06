@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { Dashboard } from '@/components/Dashboard';
@@ -8,11 +9,11 @@ import { DonorManagement } from '@/components/DonorManagement';
 import { SponsorManagement } from '@/components/SponsorManagement';
 import { Reports } from '@/components/Reports';
 import { UserManagement } from '@/components/UserManagement';
+import { ParticleBackground } from '@/components/ParticleBackground';
 import { useAuth } from '@/hooks/useAuth';
 import { LoginForm } from '@/components/LoginForm';
 
 export type UserRole = 'admin' | 'finance' | 'event_manager' | 'viewer';
-
 export type ActiveSection = 'dashboard' | 'donations' | 'donors' | 'sponsors' | 'reports' | 'users';
 
 const Index = () => {
@@ -21,7 +22,12 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!user) {
-    return <LoginForm onLogin={login} />;
+    return (
+      <div className="min-h-screen relative overflow-hidden">
+        <ParticleBackground />
+        <LoginForm onLogin={login} />
+      </div>
+    );
   }
 
   const renderActiveSection = () => {
@@ -44,28 +50,50 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header 
-        user={user} 
-        onLogout={logout} 
-        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-      />
+    <div className="min-h-screen relative overflow-hidden">
+      <ParticleBackground />
       
-      <div className="flex">
-        <Sidebar 
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
-          userRole={user.role}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+      >
+        <Header 
+          user={user} 
+          onLogout={logout} 
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         />
         
-        <main className="flex-1 p-6 lg:ml-64">
-          <div className="max-w-7xl mx-auto">
-            {renderActiveSection()}
-          </div>
-        </main>
-      </div>
+        <div className="flex relative">
+          <Sidebar 
+            activeSection={activeSection}
+            onSectionChange={setActiveSection}
+            userRole={user.role}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
+          
+          <main className="flex-1 p-6 lg:ml-64 relative z-10">
+            <div className="max-w-7xl mx-auto">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeSection}
+                  initial={{ opacity: 0, x: 50, rotateY: -10 }}
+                  animate={{ opacity: 1, x: 0, rotateY: 0 }}
+                  exit={{ opacity: 0, x: -50, rotateY: 10 }}
+                  transition={{ 
+                    duration: 0.5,
+                    type: "spring",
+                    stiffness: 100
+                  }}
+                >
+                  {renderActiveSection()}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </main>
+        </div>
+      </motion.div>
     </div>
   );
 };
