@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
-import { Download, TrendingUp, DollarSign, Users, Award } from 'lucide-react';
+import { Download, TrendingUp, DollarSign, Users, Award, FileText, Loader2 } from 'lucide-react';
 import { UserRole } from '@/pages/Index';
+import { useToast } from '@/hooks/use-toast';
 
 interface ReportsProps {
   userRole: UserRole;
@@ -45,8 +46,84 @@ export const Reports = ({ userRole }: ReportsProps) => {
     from: new Date(2024, 0, 1),
     to: new Date(2024, 5, 30)
   });
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const { toast } = useToast();
 
   const canExport = ['admin', 'finance'].includes(userRole);
+
+  const handleGenerateReport = async () => {
+    setIsGenerating(true);
+    console.log('Generating report:', { reportType, dateRange });
+    
+    try {
+      // Simulate report generation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      toast({
+        title: "Report Generated",
+        description: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report has been generated successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleExportReport = async () => {
+    if (!canExport) return;
+    
+    setIsExporting(true);
+    console.log('Exporting report:', { reportType, dateRange });
+    
+    try {
+      // Simulate export process
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Create and download a sample CSV file
+      const csvContent = generateCSVContent();
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${reportType}-report-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Export Complete",
+        description: "Report has been exported and downloaded successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const generateCSVContent = () => {
+    const headers = ['Month', 'Donations', 'Sponsors', 'New Donors', 'New Sponsors'];
+    const rows = monthlyData.map(row => [
+      row.month,
+      row.donations,
+      row.sponsors,
+      row.donors,
+      row.newSponsors
+    ]);
+    
+    return [headers, ...rows].map(row => row.join(',')).join('\n');
+  };
 
   return (
     <div className="space-y-6">
@@ -57,9 +134,17 @@ export const Reports = ({ userRole }: ReportsProps) => {
         </div>
         
         {canExport && (
-          <Button className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600">
-            <Download className="w-4 h-4 mr-2" />
-            Export Report
+          <Button 
+            onClick={handleExportReport}
+            disabled={isExporting}
+            className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 disabled:opacity-50"
+          >
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 mr-2" />
+            )}
+            {isExporting ? 'Exporting...' : 'Export Report'}
           </Button>
         )}
       </div>
@@ -85,8 +170,23 @@ export const Reports = ({ userRole }: ReportsProps) => {
               onDateChange={setDateRange}
             />
             
-            <Button variant="outline" className="w-full">
-              Generate Report
+            <Button 
+              onClick={handleGenerateReport}
+              disabled={isGenerating}
+              variant="outline" 
+              className="w-full"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Generate Report
+                </>
+              )}
             </Button>
           </div>
         </CardContent>
