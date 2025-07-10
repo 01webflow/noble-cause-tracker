@@ -2,12 +2,14 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserRole } from '@/pages/Index';
-import { Heart, Eye, EyeOff, Mail, Lock, User, Shield, Sparkles } from 'lucide-react';
+import { Heart, Mail, Lock, User, Shield, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
 import { ParticleBackground } from './ParticleBackground';
+import { AuthFormField } from './AuthFormField';
+import { useFormValidation } from '@/hooks/useFormValidation';
+import { useToast } from '@/hooks/use-toast';
 
 interface EnhancedAuthProps {
   onLogin: (email: string, password: string, role: UserRole) => boolean;
@@ -17,59 +19,124 @@ export const EnhancedAuth = ({ onLogin }: EnhancedAuthProps) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [formData, setFormData] = useState({
+  const [role, setRole] = useState<UserRole>('admin');
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const { 
+    updateField, 
+    validateForm, 
+    resetForm, 
+    getFieldValue, 
+    getFieldError, 
+    isFieldTouched,
+    hasErrors 
+  } = useFormValidation({
     email: '',
     password: '',
     confirmPassword: '',
     firstName: '',
-    lastName: '',
-    role: 'admin' as UserRole
+    lastName: ''
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+  const validationRules = {
+    email: {
+      required: true,
+      pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    },
+    password: {
+      required: true,
+      minLength: 6,
+      custom: (value: string) => {
+        if (!/(?=.*[a-z])/.test(value)) return 'Password must contain at least one lowercase letter';
+        if (!/(?=.*[A-Z])/.test(value)) return 'Password must contain at least one uppercase letter';
+        if (!/(?=.*\d)/.test(value)) return 'Password must contain at least one number';
+        return null;
+      }
+    },
+    ...(isLogin ? {} : {
+      firstName: { required: true, minLength: 2 },
+      lastName: { required: true, minLength: 2 },
+      confirmPassword: {
+        required: true,
+        custom: (value: string) => {
+          return value !== getFieldValue('password') ? 'Passwords do not match' : null;
+        }
+      }
+    })
+  };
 
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (!isLogin) {
-      if (!formData.firstName) newErrors.firstName = 'First name is required';
-      if (!formData.lastName) newErrors.lastName = 'Last name is required';
-      if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = 'Passwords do not match';
+  const handleFieldChange = (fieldName: string, value: string) => {
+    updateField(fieldName, value, validationRules[fieldName as keyof typeof validationRules]);
+    
+    // Revalidate confirm password when password changes
+    if (fieldName === 'password' && !isLogin) {
+      const confirmPassword = getFieldValue('confirmPassword');
+      if (confirmPassword) {
+        updateField('confirmPassword', confirmPassword, validationRules.confirmPassword);
       }
     }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    
+    if (!validateForm(validationRules)) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsLoading(true);
-    setTimeout(() => {
-      onLogin(formData.email, formData.password, formData.role);
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+      
+      const success = onLogin(getFieldValue('email'), getFieldValue('password'), role);
+      
+      if (success) {
+        toast({
+          title: isLogin ? "Welcome back!" : "Account created!",
+          description: isLogin ? "You have successfully signed in" : "Your account has been created successfully",
+        });
+      } else {
+        throw new Error('Authentication failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Authentication Error",
+        description: "Invalid credentials. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
-  const inputVariants = {
-    focused: { scale: 1.02, transition: { duration: 0.2 } },
-    unfocused: { scale: 1, transition: { duration: 0.2 } }
+  const handleTabSwitch = (newIsLogin: boolean) => {
+    setIsLogin(newIsLogin);
+    resetForm();
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   };
+
+  const getPasswordStrength = (password: string): { score: number; label: string; color: string } => {
+    let score = 0;
+    if (password.length >= 6) score++;
+    if (/(?=.*[a-z])/.test(password)) score++;
+    if (/(?=.*[A-Z])/.test(password)) score++;
+    if (/(?=.*\d)/.test(password)) score++;
+    if (/(?=.*[!@#$%^&*])/.test(password)) score++;
+
+    if (score < 2) return { score, label: 'Weak', color: 'bg-red-500' };
+    if (score < 4) return { score, label: 'Fair', color: 'bg-yellow-500' };
+    return { score, label: 'Strong', color: 'bg-green-500' };
+  };
+
+  const passwordStrength = getPasswordStrength(getFieldValue('password'));
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -106,7 +173,7 @@ export const EnhancedAuth = ({ onLogin }: EnhancedAuthProps) => {
               <div className="flex rounded-2xl glass p-1 mb-6">
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setIsLogin(true)}
+                  onClick={() => handleTabSwitch(true)}
                   className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
                     isLogin 
                       ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg' 
@@ -117,7 +184,7 @@ export const EnhancedAuth = ({ onLogin }: EnhancedAuthProps) => {
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setIsLogin(false)}
+                  onClick={() => handleTabSwitch(false)}
                   className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
                     !isLogin 
                       ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg' 
@@ -137,71 +204,76 @@ export const EnhancedAuth = ({ onLogin }: EnhancedAuthProps) => {
                       exit={{ opacity: 0, height: 0 }}
                       className="grid grid-cols-2 gap-4"
                     >
-                      <motion.div variants={inputVariants} whileFocus="focused">
-                        <div className="relative">
-                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                          <Input
-                            type="text"
-                            placeholder="First Name"
-                            value={formData.firstName}
-                            onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                            className="pl-10 glass border-white/20 text-white placeholder-gray-400 focus:border-blue-400"
-                          />
-                        </div>
-                        {errors.firstName && <p className="text-red-400 text-sm mt-1">{errors.firstName}</p>}
-                      </motion.div>
+                      <AuthFormField
+                        type="text"
+                        placeholder="First Name"
+                        value={getFieldValue('firstName')}
+                        error={getFieldError('firstName')}
+                        touched={isFieldTouched('firstName')}
+                        icon={<User className="h-5 w-5" />}
+                        onChange={(value) => handleFieldChange('firstName', value)}
+                      />
 
-                      <motion.div variants={inputVariants} whileFocus="focused">
-                        <div className="relative">
-                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                          <Input
-                            type="text"
-                            placeholder="Last Name"
-                            value={formData.lastName}
-                            onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                            className="pl-10 glass border-white/20 text-white placeholder-gray-400 focus:border-blue-400"
-                          />
-                        </div>
-                        {errors.lastName && <p className="text-red-400 text-sm mt-1">{errors.lastName}</p>}
-                      </motion.div>
+                      <AuthFormField
+                        type="text"
+                        placeholder="Last Name"
+                        value={getFieldValue('lastName')}
+                        error={getFieldError('lastName')}
+                        touched={isFieldTouched('lastName')}
+                        icon={<User className="h-5 w-5" />}
+                        onChange={(value) => handleFieldChange('lastName', value)}
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                <motion.div variants={inputVariants} whileFocus="focused">
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <Input
-                      type="email"
-                      placeholder="Email Address"
-                      value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      className="pl-10 glass border-white/20 text-white placeholder-gray-400 focus:border-blue-400"
-                    />
-                  </div>
-                  {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
-                </motion.div>
+                <AuthFormField
+                  type="email"
+                  placeholder="Email Address"
+                  value={getFieldValue('email')}
+                  error={getFieldError('email')}
+                  touched={isFieldTouched('email')}
+                  icon={<Mail className="h-5 w-5" />}
+                  onChange={(value) => handleFieldChange('email', value)}
+                />
 
-                <motion.div variants={inputVariants} whileFocus="focused">
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Password"
-                      value={formData.password}
-                      onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                      className="pl-10 pr-10 glass border-white/20 text-white placeholder-gray-400 focus:border-blue-400"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                <div className="space-y-2">
+                  <AuthFormField
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    value={getFieldValue('password')}
+                    error={getFieldError('password')}
+                    touched={isFieldTouched('password')}
+                    icon={<Lock className="h-5 w-5" />}
+                    showPassword={showPassword}
+                    onTogglePassword={() => setShowPassword(!showPassword)}
+                    onChange={(value) => handleFieldChange('password', value)}
+                  />
+                  
+                  {!isLogin && getFieldValue('password') && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="space-y-2"
                     >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                  {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
-                </motion.div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-400">Password strength:</span>
+                        <span className={`font-medium ${
+                          passwordStrength.score < 2 ? 'text-red-400' : 
+                          passwordStrength.score < 4 ? 'text-yellow-400' : 'text-green-400'
+                        }`}>
+                          {passwordStrength.label}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full transition-all duration-300 ${passwordStrength.color}`}
+                          style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
 
                 <AnimatePresence>
                   {!isLogin && (
@@ -209,34 +281,25 @@ export const EnhancedAuth = ({ onLogin }: EnhancedAuthProps) => {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      variants={inputVariants} 
-                      whileFocus="focused"
                     >
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                        <Input
-                          type={showConfirmPassword ? "text" : "password"}
-                          placeholder="Confirm Password"
-                          value={formData.confirmPassword}
-                          onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                          className="pl-10 pr-10 glass border-white/20 text-white placeholder-gray-400 focus:border-blue-400"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                        >
-                          {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
-                      </div>
-                      {errors.confirmPassword && <p className="text-red-400 text-sm mt-1">{errors.confirmPassword}</p>}
+                      <AuthFormField
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="Confirm Password"
+                        value={getFieldValue('confirmPassword')}
+                        error={getFieldError('confirmPassword')}
+                        touched={isFieldTouched('confirmPassword')}
+                        icon={<Lock className="h-5 w-5" />}
+                        showPassword={showConfirmPassword}
+                        onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onChange={(value) => handleFieldChange('confirmPassword', value)}
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
 
                 <div className="relative">
                   <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 z-10" />
-                  <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value as UserRole }))}>
+                  <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
                     <SelectTrigger className="pl-10 glass border-white/20 text-white">
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
@@ -255,27 +318,37 @@ export const EnhancedAuth = ({ onLogin }: EnhancedAuthProps) => {
                 >
                   <Button 
                     type="submit" 
-                    disabled={isLoading}
-                    className="w-full py-6 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white font-medium rounded-2xl glow transition-all duration-300"
+                    disabled={isLoading || hasErrors()}
+                    className="w-full py-6 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white font-medium rounded-2xl glow transition-all duration-300 disabled:opacity-50"
                   >
                     {isLoading ? (
                       <motion.div
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="flex items-center gap-2"
                       >
                         <Sparkles className="h-5 w-5" />
+                        <span>Processing...</span>
                       </motion.div>
                     ) : (
-                      isLogin ? 'Sign In' : 'Create Account'
+                      <div className="flex items-center gap-2">
+                        {isLogin ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+                        {isLogin ? 'Sign In' : 'Create Account'}
+                      </div>
                     )}
                   </Button>
                 </motion.div>
               </form>
 
-              <div className="text-center">
+              <div className="text-center space-y-2">
                 <p className="text-sm text-gray-400">
                   Demo credentials: Use any email/password combination
                 </p>
+                {!isLogin && (
+                  <p className="text-xs text-gray-500">
+                    By creating an account, you agree to our Terms of Service and Privacy Policy
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
