@@ -12,7 +12,13 @@ import {
   Settings,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Heart,
+  Building2,
+  Target,
+  Calendar,
+  MessageSquare,
+  Trophy
 } from 'lucide-react';
 import { ActiveSection, UserRole } from '@/pages/Index';
 
@@ -37,9 +43,13 @@ export const Sidebar = ({
 }: SidebarProps) => {
   const menuItems = [
     { id: 'dashboard' as ActiveSection, label: 'Dashboard', icon: BarChart3, roles: ['admin', 'finance', 'event_manager', 'viewer'] },
+    { id: 'causes' as ActiveSection, label: 'Causes', icon: Target, roles: ['admin', 'finance', 'event_manager', 'viewer'] },
     { id: 'donations' as ActiveSection, label: 'Donations', icon: DollarSign, roles: ['admin', 'finance', 'event_manager'] },
-    { id: 'donors' as ActiveSection, label: 'Donors', icon: Users, roles: ['admin', 'finance', 'event_manager'] },
-    { id: 'sponsors' as ActiveSection, label: 'Sponsors', icon: Award, roles: ['admin', 'finance', 'event_manager'] },
+    { id: 'donors' as ActiveSection, label: 'Donors', icon: Heart, roles: ['admin', 'finance', 'event_manager'] },
+    { id: 'sponsors' as ActiveSection, label: 'Sponsors', icon: Building2, roles: ['admin', 'finance', 'event_manager'] },
+    { id: 'events' as ActiveSection, label: 'Events', icon: Calendar, roles: ['admin', 'finance', 'event_manager', 'viewer'] },
+    { id: 'messages' as ActiveSection, label: 'Messages', icon: MessageSquare, roles: ['admin', 'finance', 'event_manager', 'viewer'] },
+    { id: 'achievements' as ActiveSection, label: 'Achievements', icon: Trophy, roles: ['admin', 'finance', 'event_manager', 'viewer'] },
     { id: 'reports' as ActiveSection, label: 'Reports', icon: FileText, roles: ['admin', 'finance', 'event_manager', 'viewer'] },
     { id: 'users' as ActiveSection, label: 'User Management', icon: Settings, roles: ['admin'] },
   ];

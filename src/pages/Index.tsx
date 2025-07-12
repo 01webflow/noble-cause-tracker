@@ -9,13 +9,17 @@ import { DonorManagement } from '@/components/DonorManagement';
 import { SponsorManagement } from '@/components/SponsorManagement';
 import { Reports } from '@/components/Reports';
 import { UserManagement } from '@/components/UserManagement';
+import { CauseManagement } from '@/components/CauseManagement';
+import { EventCalendar } from '@/components/EventCalendar';
+import { MessageCenter } from '@/components/MessageCenter';
+import { Gamification } from '@/components/Gamification';
 import { ParticleBackground } from '@/components/ParticleBackground';
 import { useAuth } from '@/hooks/useAuth';
 import { EnhancedAuth } from '@/components/EnhancedAuth';
 import { cn } from '@/lib/utils';
 
 export type UserRole = 'admin' | 'finance' | 'event_manager' | 'viewer';
-export type ActiveSection = 'dashboard' | 'donations' | 'donors' | 'sponsors' | 'reports' | 'users';
+export type ActiveSection = 'dashboard' | 'donations' | 'donors' | 'sponsors' | 'reports' | 'users' | 'causes' | 'events' | 'messages' | 'achievements';
 
 const Index = () => {
   const { user, login, logout } = useAuth();
@@ -83,6 +87,14 @@ const Index = () => {
         return <Reports userRole={user.role} />;
       case 'users':
         return user.role === 'admin' ? <UserManagement /> : <Dashboard />;
+      case 'causes':
+        return <CauseManagement />;
+      case 'events':
+        return <EventCalendar />;
+      case 'messages':
+        return <MessageCenter />;
+      case 'achievements':
+        return <Gamification />;
       default:
         return <Dashboard />;
     }
